@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Simple Photo Editor</title>
+    <title>Inton Photo Editor</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -12,11 +12,15 @@
             align-items: center;
             height: 100vh;
             margin: 0;
-            background-color: #f0f0f0;
+            background: linear-gradient(135deg, #ff9a9e 0%, #fad0c4 99%, #fad0c4 100%);
         }
 
         .container {
             text-align: center;
+            background: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
         }
 
         canvas {
@@ -99,29 +103,48 @@
             const temperature = document.getElementById('temperature').value;
             const exposure = document.getElementById('exposure').value;
 
+            const brightnessFactor = (brightness - 100) / 100;
+            const contrastFactor = (contrast - 100) / 100;
+            const saturationFactor = (saturation - 100) / 100;
+            const temperatureFactor = (temperature - 100) / 100;
+            const exposureFactor = (exposure - 100) / 100;
+
             for (let i = 0; i < imageData.data.length; i += 4) {
-                // Brightness & Contrast
-                imageData.data[i] = clamp((originalImage.data[i] - 128) * contrast / 100 + 128 + (brightness - 100));
-                imageData.data[i + 1] = clamp((originalImage.data[i + 1] - 128) * contrast / 100 + 128 + (brightness - 100));
-                imageData.data[i + 2] = clamp((originalImage.data[i + 2] - 128) * contrast / 100 + 128 + (brightness - 100));
+                let r = imageData.data[i];
+                let g = imageData.data[i + 1];
+                let b = imageData.data[i + 2];
+
+                // Brightness
+                r += 255 * brightnessFactor;
+                g += 255 * brightnessFactor;
+                b += 255 * brightnessFactor;
+
+                // Contrast
+                r = ((r - 128) * (1 + contrastFactor)) + 128;
+                g = ((g - 128) * (1 + contrastFactor)) + 128;
+                b = ((b - 128) * (1 + contrastFactor)) + 128;
 
                 // Saturation
-                let avg = (imageData.data[i] + imageData.data[i + 1] + imageData.data[i + 2]) / 3;
-                imageData.data[i] = clamp(avg + (imageData.data[i] - avg) * (saturation / 100));
-                imageData.data[i + 1] = clamp(avg + (imageData.data[i + 1] - avg) * (saturation / 100));
-                imageData.data[i + 2] = clamp(avg + (imageData.data[i + 2] - avg) * (saturation / 100));
+                const avg = (r + g + b) / 3;
+                r += (r - avg) * saturationFactor;
+                g += (g - avg) * saturationFactor;
+                b += (b - avg) * saturationFactor;
 
                 // Temperature
-                imageData.data[i] = clamp(imageData.data[i] + (temperature - 100));
-                imageData.data[i + 2] = clamp(imageData.data[i + 2] - (temperature - 100));
+                r += 255 * temperatureFactor;
+                b -= 255 * temperatureFactor;
 
                 // Exposure
-                imageData.data[i] = clamp(imageData.data[i] * (exposure / 100));
-                imageData.data[i + 1] = clamp(imageData.data[i + 1] * (exposure / 100));
-                imageData.data[i + 2] = clamp(imageData.data[i + 2] * (exposure / 100));
+                r *= (1 + exposureFactor);
+                g *= (1 + exposureFactor);
+                b *= (1 + exposureFactor);
+
+                imageData.data[i] = clamp(r);
+                imageData.data[i + 1] = clamp(g);
+                imageData.data[i + 2] = clamp(b);
             }
 
-            ctx.putImageData(imageData, 10, 10);
+            ctx.putImageData(imageData, 0, 0);
         }
 
         function clamp(value) {
