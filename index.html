@@ -42,7 +42,7 @@
 </head>
 <body>
     <div class="container">
-        <h1>Inton Editor</h1>
+        <h1>Inton Photo Editor</h1>
         <input type="file" id="upload" accept="image/*">
         <canvas id="canvas"></canvas>
         <div class="controls">
@@ -50,6 +50,12 @@
             <input type="range" id="brightness" min="0" max="200" value="100">
             <label for="contrast">Contrast:</label>
             <input type="range" id="contrast" min="0" max="200" value="100">
+            <label for="saturation">Saturation:</label>
+            <input type="range" id="saturation" min="0" max="200" value="100">
+            <label for="temperature">Temperature:</label>
+            <input type="range" id="temperature" min="0" max="200" value="100">
+            <label for="exposure">Exposure:</label>
+            <input type="range" id="exposure" min="0" max="200" value="100">
             <button id="download">Download</button>
         </div>
     </div>
@@ -57,6 +63,9 @@
         document.getElementById('upload').addEventListener('change', handleImageUpload);
         document.getElementById('brightness').addEventListener('input', applyFilters);
         document.getElementById('contrast').addEventListener('input', applyFilters);
+        document.getElementById('saturation').addEventListener('input', applyFilters);
+        document.getElementById('temperature').addEventListener('input', applyFilters);
+        document.getElementById('exposure').addEventListener('input', applyFilters);
         document.getElementById('download').addEventListener('click', downloadImage);
 
         let canvas = document.getElementById('canvas');
@@ -86,11 +95,30 @@
             let imageData = new ImageData(new Uint8ClampedArray(originalImage.data), originalImage.width, originalImage.height);
             const brightness = document.getElementById('brightness').value;
             const contrast = document.getElementById('contrast').value;
+            const saturation = document.getElementById('saturation').value;
+            const temperature = document.getElementById('temperature').value;
+            const exposure = document.getElementById('exposure').value;
 
             for (let i = 0; i < imageData.data.length; i += 4) {
+                // Brightness & Contrast
                 imageData.data[i] = clamp((originalImage.data[i] - 128) * contrast / 100 + 128 + (brightness - 100));
                 imageData.data[i + 1] = clamp((originalImage.data[i + 1] - 128) * contrast / 100 + 128 + (brightness - 100));
                 imageData.data[i + 2] = clamp((originalImage.data[i + 2] - 128) * contrast / 100 + 128 + (brightness - 100));
+
+                // Saturation
+                let avg = (imageData.data[i] + imageData.data[i + 1] + imageData.data[i + 2]) / 3;
+                imageData.data[i] = clamp(avg + (imageData.data[i] - avg) * (saturation / 100));
+                imageData.data[i + 1] = clamp(avg + (imageData.data[i + 1] - avg) * (saturation / 100));
+                imageData.data[i + 2] = clamp(avg + (imageData.data[i + 2] - avg) * (saturation / 100));
+
+                // Temperature
+                imageData.data[i] = clamp(imageData.data[i] + (temperature - 100));
+                imageData.data[i + 2] = clamp(imageData.data[i + 2] - (temperature - 100));
+
+                // Exposure
+                imageData.data[i] = clamp(imageData.data[i] * (exposure / 100));
+                imageData.data[i + 1] = clamp(imageData.data[i + 1] * (exposure / 100));
+                imageData.data[i + 2] = clamp(imageData.data[i + 2] * (exposure / 100));
             }
 
             ctx.putImageData(imageData, 0, 0);
