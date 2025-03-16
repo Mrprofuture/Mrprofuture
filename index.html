@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Inton Photo Editor</title>
+    <title>Simple Photo Editor</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -46,7 +46,7 @@
 </head>
 <body>
     <div class="container">
-        <h1>Inton Photo Editor</h1>
+        <h1>Simple Photo Editor</h1>
         <input type="file" id="upload" accept="image/*">
         <canvas id="canvas"></canvas>
         <div class="controls">
@@ -60,6 +60,7 @@
             <input type="range" id="temperature" min="0" max="200" value="100">
             <label for="exposure">Exposure:</label>
             <input type="range" id="exposure" min="0" max="200" value="100">
+            <button id="resize">Resize to 4x4 inch</button>
             <button id="download">Download</button>
         </div>
     </div>
@@ -70,6 +71,7 @@
         document.getElementById('saturation').addEventListener('input', applyFilters);
         document.getElementById('temperature').addEventListener('input', applyFilters);
         document.getElementById('exposure').addEventListener('input', applyFilters);
+        document.getElementById('resize').addEventListener('click', resizeImage);
         document.getElementById('download').addEventListener('click', downloadImage);
 
         let canvas = document.getElementById('canvas');
@@ -149,6 +151,27 @@
 
         function clamp(value) {
             return Math.max(0, Math.min(255, value));
+        }
+
+        function resizeImage() {
+            if (!originalImage) return;
+
+            const inchToPx = 96; // Assume 96 pixels per inch
+            const newWidth = 4 * inchToPx;
+            const newHeight = 4 * inchToPx;
+
+            const tempCanvas = document.createElement('canvas');
+            const tempCtx = tempCanvas.getContext('2d');
+            tempCanvas.width = newWidth;
+            tempCanvas.height = newHeight;
+
+            tempCtx.drawImage(canvas, 0, 0, canvas.width, canvas.height, 0, 0, newWidth, newHeight);
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            canvas.width = newWidth;
+            canvas.height = newHeight;
+            ctx.drawImage(tempCanvas, 0, 0);
+
+            originalImage = ctx.getImageData(0, 0, newWidth, newHeight);
         }
 
         function downloadImage() {
