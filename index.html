@@ -121,7 +121,7 @@
                 imageData.data[i + 2] = clamp(imageData.data[i + 2] * (exposure / 100));
             }
 
-            ctx.putImageData(imageData, 0, 0);
+            ctx.putImageData(imageData, 10, 10);
         }
 
         function clamp(value) {
