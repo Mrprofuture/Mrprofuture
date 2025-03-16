@@ -3,135 +3,109 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Simple Calculator</title>
+    <title>Simple Photo Editor</title>
     <style>
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-            font-family: 'Arial', sans-serif;
-        }
-
         body {
+            font-family: Arial, sans-serif;
             display: flex;
             justify-content: center;
             align-items: center;
             height: 100vh;
-            background: #f0f0f0;
+            margin: 0;
+            background-color: #f0f0f0;
         }
 
-        .calculator {
-            background: #fff;
-            border-radius: 10px;
-            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
-            overflow: hidden;
-            width: 320px;
+        .container {
+            text-align: center;
         }
 
-        .display {
-            background: #222;
-            color: #fff;
-            text-align: right;
-            padding: 20px;
-            font-size: 2em;
+        canvas {
+            display: block;
+            margin: 20px auto;
+            max-width: 100%;
         }
 
-        .display input {
-            width: 100%;
-            background: none;
-            border: none;
-            color: #fff;
-            font-size: 1.5em;
-            text-align: right;
+        .controls {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
         }
 
-        .buttons {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 1px;
-        }
-
-        .btn {
-            background: #f9f9f9;
-            border: none;
-            padding: 20px;
-            font-size: 1.5em;
-            cursor: pointer;
-            transition: background 0.3s;
-        }
-
-        .btn:hover {
-            background: #e0e0e0;
-        }
-
-        .btn:active {
-            background: #d0d0d0;
-        }
-
-        .equal {
-            background: #ff9500;
-            color: #fff;
-            grid-column: span 2;
-        }
-
-        .equal:hover {
-            background: #e08600;
-        }
-
-        .zero {
-            grid-column: span 2;
+        .controls label,
+        .controls input,
+        .controls button {
+            margin: 5px;
         }
     </style>
 </head>
 <body>
-    <div class="calculator">
-        <div class="display">
-            <input type="text" id="result" disabled>
-        </div>
-        <div class="buttons">
-            <button class="btn" onclick="clearDisplay()">C</button>
-            <button class="btn" onclick="deleteLast()">DEL</button>
-            <button class="btn" onclick="appendToDisplay('/')">/</button>
-            <button class="btn" onclick="appendToDisplay('*')">*</button>
-            <button class="btn" onclick="appendToDisplay('7')">7</button>
-            <button class="btn" onclick="appendToDisplay('8')">8</button>
-            <button class="btn" onclick="appendToDisplay('9')">9</button>
-            <button class="btn" onclick="appendToDisplay('-')">-</button>
-            <button class="btn" onclick="appendToDisplay('4')">4</button>
-            <button class="btn" onclick="appendToDisplay('5')">5</button>
-            <button class="btn" onclick="appendToDisplay('6')">6</button>
-            <button class="btn" onclick="appendToDisplay('+')">+</button>
-            <button class="btn" onclick="appendToDisplay('1')">1</button>
-            <button class="btn" onclick="appendToDisplay('2')">2</button>
-            <button class="btn" onclick="appendToDisplay('3')">3</button>
-            <button class="btn equal" onclick="calculateResult()">=</button>
-            <button class="btn zero" onclick="appendToDisplay('0')">0</button>
-            <button class="btn" onclick="appendToDisplay('.')">.</button>
+    <div class="container">
+        <h1>Simple Photo Editor</h1>
+        <input type="file" id="upload" accept="image/*">
+        <canvas id="canvas"></canvas>
+        <div class="controls">
+            <label for="brightness">Brightness:</label>
+            <input type="range" id="brightness" min="0" max="200" value="100">
+            <label for="contrast">Contrast:</label>
+            <input type="range" id="contrast" min="0" max="200" value="100">
+            <button id="download">Download</button>
         </div>
     </div>
     <script>
-        function clearDisplay() {
-            document.getElementById('result').value = '';
-        }
+        document.getElementById('upload').addEventListener('change', handleImageUpload);
+        document.getElementById('brightness').addEventListener('input', applyFilters);
+        document.getElementById('contrast').addEventListener('input', applyFilters);
+        document.getElementById('download').addEventListener('click', downloadImage);
 
-        function deleteLast() {
-            let display = document.getElementById('result');
-            display.value = display.value.slice(0, -1);
-        }
+        let canvas = document.getElementById('canvas');
+        let ctx = canvas.getContext('2d');
+        let originalImage = null;
 
-        function appendToDisplay(value) {
-            document.getElementById('result').value += value;
-        }
-
-        function calculateResult() {
-            let display = document.getElementById('result');
-            try {
-                display.value = eval(display.value);
-            } catch {
-                display.value = 'Error';
+        function handleImageUpload(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const img = new Image();
+                    img.onload = function() {
+                        canvas.width = img.width;
+                        canvas.height = img.height;
+                        ctx.drawImage(img, 0, 0);
+                        originalImage = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                    }
+                    img.src = e.target.result;
+                }
+                reader.readAsDataURL(file);
             }
+        }
+
+        function applyFilters() {
+            if (!originalImage) return;
+            let imageData = new ImageData(new Uint8ClampedArray(originalImage.data), originalImage.width, originalImage.height);
+            const brightness = document.getElementById('brightness').value;
+            const contrast = document.getElementById('contrast').value;
+
+            for (let i = 0; i < imageData.data.length; i += 4) {
+                imageData.data[i] = clamp((originalImage.data[i] - 128) * contrast / 100 + 128 + (brightness - 100));
+                imageData.data[i + 1] = clamp((originalImage.data[i + 1] - 128) * contrast / 100 + 128 + (brightness - 100));
+                imageData.data[i + 2] = clamp((originalImage.data[i + 2] - 128) * contrast / 100 + 128 + (brightness - 100));
+            }
+
+            ctx.putImageData(imageData, 0, 0);
+        }
+
+        function clamp(value) {
+            return Math.max(0, Math.min(255, value));
+        }
+
+        function downloadImage() {
+            const link = document.createElement('a');
+            link.download = 'edited-image.png';
+            link.href = canvas.toDataURL();
+            link.click();
         }
     </script>
 </body>
 </html>
-```
